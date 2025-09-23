@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Spoken.App.MainPage"
+             Title="Spoken">
+    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*">
+        <!-- Top bar -->
+        <Grid BackgroundColor="{StaticResource Primary}" Padding="16" Row="0">
+            <Label Text="Spoken" TextColor="White" FontSize="20" FontAttributes="Bold"/>
+        </Grid>
+
+        <!-- Content -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="16" Spacing="12">
+                <HorizontalStackLayout Spacing="8">
+                    <Entry x:Name="PassageEntry" Placeholder="Passage (e.g., John 3:16-18)" HorizontalOptions="FillAndExpand"/>
+                    <Picker x:Name="TranslationPicker" WidthRequest="140">
+                        <Picker.Items>
+                            <x:String>KJV</x:String>
+                            <x:String>ASV</x:String>
+                            <x:String>WEB</x:String>
+                        </Picker.Items>
+                    </Picker>
+                </HorizontalStackLayout>
+                <Entry x:Name="TitleEntry" Placeholder="Optional title or note heading"/>
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="Format" Clicked="OnFormatClicked" BackgroundColor="{StaticResource Primary}" TextColor="White"/>
+                    <Button Text="Export PDF" Clicked="OnExportPdfClicked"/>
+                </HorizontalStackLayout>
+                <WebView x:Name="Preview" HeightRequest="600"/>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Footer -->
+        <Grid Row="2" Padding="8">
+            <Label Text="KJV/ASV/WEB bundled · Minimal blue theme" FontSize="12" TextColor="Gray"/>
+        </Grid>
+    </Grid>
+</ContentPage>

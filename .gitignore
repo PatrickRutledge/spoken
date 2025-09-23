@@ -1,0 +1,27 @@
+# OS/IDE
+.DS_Store
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+out/
+**/bin/**
+**/obj/**
+
+# Logs
+*.log
+
+# User secrets / local settings
+*.local.settings.json
+
+# App data not for source control
+versions/*.zip
+
+bin/obj/out/.vs/.vscode/.idea/Spoken.App/Platforms/Android/**Spoken.App/obj/**Spoken.App/bin/**Spoken.Cli/obj/**Spoken.Cli/bin/**Spoken.Core/obj/**Spoken.Core/bin/**versions/*.zip
