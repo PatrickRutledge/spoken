@@ -28,6 +28,18 @@ public class Verse
 	public bool IsPoetryHint { get; set; }
 	public int PoetryLevel { get; set; } = 0;
 	public bool IsNewParagraph { get; set; } = false;
+	
+	// AI Thought Grouping Properties
+	public int ThoughtGroupId { get; set; } = 0;
+	public bool IsThoughtStart { get; set; } = false;
+}
+
+public enum FormattingMode
+{
+	/// <summary>Scholarly USFM paragraph breaks based on manuscript traditions</summary>
+	Scholarly,
+	/// <summary>AI-powered thought unit grouping for enhanced readability</summary>
+	AiThoughtGroups
 }
 
 public class Passage
@@ -64,7 +76,7 @@ public static class ProseFormatter
 	private static readonly Regex TextualMarkers = new(@"\b[Tt][123]\b", RegexOptions.Compiled);
 	private static readonly Regex DuplicateSpanTags = new(@"(<span class=""sc"">LORD</span>)\s*\1+", RegexOptions.Compiled);
 
-	public static string FormatToParagraphs(IEnumerable<Verse> verses, bool applySmallCapsDivineName = true, bool capitalizeDeityPronouns = true, bool smartQuotes = true, bool emDash = true)
+	public static string FormatToParagraphs(IEnumerable<Verse> verses, FormattingMode mode = FormattingMode.Scholarly, bool applySmallCapsDivineName = true, bool capitalizeDeityPronouns = true, bool smartQuotes = true, bool emDash = true)
 	{
 		var sb = new StringBuilder();
 		// Group verses into paragraphs, respecting poetry structure
@@ -100,14 +112,20 @@ public static class ProseFormatter
 			}
 			else
 			{
-				// Check if this verse starts a new paragraph
-				if (v.IsNewParagraph && paragraph.Count > 0)
+				// Check if this verse starts a new paragraph based on formatting mode
+				bool shouldStartNewParagraph = mode switch
+				{
+					FormattingMode.Scholarly => v.IsNewParagraph && paragraph.Count > 0,
+					FormattingMode.AiThoughtGroups => v.IsThoughtStart && paragraph.Count > 0,
+					_ => v.IsNewParagraph && paragraph.Count > 0
+				};
+				
+				if (shouldStartNewParagraph)
 				{
 					FlushParagraph(); // Flush current paragraph before starting new one
 				}
 				
 				paragraph.Add(v);
-				// No more arbitrary verse count limit - paragraphs are determined by USFM markers
 			}
 		}
 		FlushParagraph();

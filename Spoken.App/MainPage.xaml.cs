@@ -44,8 +44,12 @@ public partial class MainPage : ContentPage
 
         // Set default selection
         TranslationPicker.SelectedIndex = 0;
+        FormattingModePicker.SelectedIndex = 0; // Scholarly (USFM) - default
         StartBookPicker.SelectedIndex = 0; // Genesis
         EndBookPicker.SelectedIndex = 0;   // Genesis
+        
+        // Update formatting description
+        UpdateFormattingDescription();
     }
 
     private void SetDefaultPassage()
@@ -316,18 +320,18 @@ public partial class MainPage : ContentPage
                 return;
             }
 
-            var html = ProseFormatter.FormatToParagraphs(verses);
+            // Get selected formatting mode
+            var formattingMode = FormattingModePicker.SelectedIndex == 1 
+                ? FormattingMode.AiThoughtGroups 
+                : FormattingMode.Scholarly;
+            
+            var html = ProseFormatter.FormatToParagraphs(verses, formattingMode);
             Preview.Source = new HtmlWebViewSource { Html = html };
         }
         catch (Exception ex)
         {
             Preview.Source = new HtmlWebViewSource { Html = $"<html><body><p>Error: {ex.Message}</p></body></html>" };
         }
-    }
-
-    private async void OnGetPassageClicked(object sender, EventArgs e)
-    {
-        await UpdatePreviewAsync();
     }
 
     private void OnImmersiveReaderClicked(object sender, EventArgs e)
@@ -345,12 +349,33 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnFormattingModeChanged(object sender, EventArgs e)
+    {
+        // Update formatting description
+        UpdateFormattingDescription();
+        
+        // Update preview when formatting mode changes
+        await UpdatePreviewAsync();
+    }
+
+    private void UpdateFormattingDescription()
+    {
+        if (FormattingModePicker.SelectedIndex == 1)
+        {
+            FormattingDescription.Text = "AI-powered thought unit grouping for enhanced readability";
+        }
+        else
+        {
+            FormattingDescription.Text = "Traditional manuscript-based paragraph breaks using USFM markers";
+        }
+    }
+
     private void LoadAvailableTranslationsAsync()
     {
         try
         {
             // Start with bundled translations
-            var availableTranslations = new List<string> { "KJV", "ASV", "WEB" };
+            var availableTranslations = new List<string> { "KJV", "ASV" };
             
             // Add installed catalog translations
             var installedCodes = _catalogService.GetInstalledTranslations();
@@ -373,7 +398,6 @@ public partial class MainPage : ContentPage
             TranslationPicker.Items.Clear();
             TranslationPicker.Items.Add("KJV");
             TranslationPicker.Items.Add("ASV");
-            TranslationPicker.Items.Add("WEB");
             TranslationPicker.SelectedIndex = 0;
         }
     }
@@ -394,7 +418,7 @@ public partial class MainPage : ContentPage
 		{
 			SetPassageReference(tab.Passage ?? "");
 			TitleEntry.Text = tab.Title;
-			var idx = Array.IndexOf(new[] { "KJV", "ASV", "WEB" }, tab.Translation?.ToUpperInvariant());
+			var idx = Array.IndexOf(new[] { "KJV", "ASV" }, tab.Translation?.ToUpperInvariant());
 			TranslationPicker.SelectedIndex = idx >= 0 ? idx : 0;
 			if (!string.IsNullOrWhiteSpace(tab.Html))
 				Preview.Source = new HtmlWebViewSource { Html = tab.Html };
@@ -529,51 +553,12 @@ public partial class MainPage : ContentPage
 	private static string Truncate(string? s, int len)
 		=> string.IsNullOrEmpty(s) ? string.Empty : (s.Length <= len ? s : s.Substring(0, len - 1) + '…');
 
-	private async void OnFormatClicked(object sender, EventArgs e)
-	{
-		try
-		{
-			var parseResult = PassageParser.Parse(GetCurrentPassageReference());
-			if (!parseResult.IsSuccess)
-			{
-				await DisplayAlert("Invalid Passage", parseResult.ErrorMessage, "OK");
-				return;
-			}
-
-			var trans = (TranslationPicker.SelectedItem?.ToString() ?? "KJV").ToUpperInvariant();
-			var verses = new List<Verse>();
-			await foreach (var v in _source.GetVersesAsync(trans, parseResult.UsfmCode!, 
-				parseResult.ChapterStart, parseResult.VerseStart, parseResult.ChapterEnd, parseResult.VerseEnd))
-				verses.Add(v);
-
-			if (verses.Count == 0)
-			{
-				await DisplayAlert("No Results", $"No verses found for {parseResult} in {trans}. The passage may not exist in this translation.", "OK");
-				return;
-			}
-
-			var html = ProseFormatter.FormatToParagraphs(verses);
-            if (ActiveTab != null)
-            {
-                ActiveTab.Html = html;
-                ActiveTab.Passage = parseResult.ToString(); // Use normalized passage reference
-                ActiveTab.Translation = trans;
-                ActiveTab.Title = TitleEntry.Text;
-                _ = PersistAsync();
-                // RebuildTabBar();
-            }
-			Preview.Source = new HtmlWebViewSource { Html = html };
-		}
-		catch (Exception ex)
-		{
-			await DisplayAlert("Error", ex.Message, "OK");
-		}
-	}	private async void OnExportPdfClicked(object sender, EventArgs e)
+	private async void OnExportPdfClicked(object sender, EventArgs e)
 	{
 		try
 		{
 			if (ActiveTab == null || string.IsNullOrWhiteSpace(ActiveTab.Html))
-				OnFormatClicked(sender, e);
+				await UpdatePreviewAsync();
 			if (ActiveTab == null || string.IsNullOrWhiteSpace(ActiveTab.Html))
 				return;
 

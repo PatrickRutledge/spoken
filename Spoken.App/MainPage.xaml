@@ -43,6 +43,30 @@
                                 </Picker.Items>
                             </Picker>
                             
+                            <Label Text="Formatting:" FontSize="14" FontAttributes="Bold" />
+                            <Picker x:Name="FormattingModePicker" SelectedIndexChanged="OnFormattingModeChanged">
+                                <Picker.Items>
+                                    <x:String>Scholarly (USFM)</x:String>
+                                    <x:String>AI Thought Groups</x:String>
+                                </Picker.Items>
+                            </Picker>
+                            <Label x:Name="FormattingDescription" FontSize="11" TextColor="Gray" Margin="0,4,0,0" />
+                            
+                            <!-- Formatting Mode Explanations -->
+                            <Frame BackgroundColor="#F0F8FF" Padding="8" HasShadow="False" Margin="0,4,0,0" IsVisible="False" x:Name="FormattingExplanation">
+                                <VerticalStackLayout Spacing="8">
+                                    <Label FontSize="12" FontAttributes="Bold" Text="Formatting Options:" />
+                                    <VerticalStackLayout Spacing="4" x:Name="ScholarlyExplanation">
+                                        <Label FontSize="11" FontAttributes="Bold" Text="• Scholarly (USFM):" TextColor="#0066CC" />
+                                        <Label FontSize="10" Text="Traditional manuscript-based paragraph breaks using USFM markers. Preserves historical Hebrew/Greek structure and academic integrity." TextColor="Gray" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Spacing="4" x:Name="AiExplanation">
+                                        <Label FontSize="11" FontAttributes="Bold" Text="• AI Thought Groups:" TextColor="#0066CC" />
+                                        <Label FontSize="10" Text="Intelligent grouping based on thematic coherence and narrative flow. Enhances readability for modern readers with natural thought unit breaks." TextColor="Gray" />
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
+                            </Frame>
+                            
                             <Label Text="Title (optional):" FontSize="14" FontAttributes="Bold" />
                             <Entry x:Name="TitleEntry" Placeholder="Enter a title" TextChanged="OnTitleChanged" />
                         </VerticalStackLayout>
@@ -50,9 +74,26 @@
 
                     <!-- Action Buttons -->
                     <VerticalStackLayout Spacing="8">
-                        <Button Text="� Get Passage" Clicked="OnGetPassageClicked" BackgroundColor="{StaticResource Secondary}" TextColor="White"/>
-                        <Button Text="�📄 Format Text" Clicked="OnFormatClicked" BackgroundColor="{StaticResource Primary}" TextColor="White"/>
                         <Button Text="📁 Export PDF" Clicked="OnExportPdfClicked" BackgroundColor="#28A745" TextColor="White"/>
+                    </VerticalStackLayout>
+
+                    <!-- Translation Information -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Translation Information:" FontSize="14" FontAttributes="Bold" />
+                        <Frame BackgroundColor="#F8F9FA" Padding="8" HasShadow="False">
+                            <VerticalStackLayout Spacing="12">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label FontSize="12" FontAttributes="Bold" Text="KJV Cambridge Paragraph Bible" TextColor="#0066CC" />
+                                    <Label FontSize="10" Text="The King James Version or Authorized Version of the Holy Bible, Cambridge Paragraph Bible edition" TextColor="Gray" />
+                                    <Label FontSize="10" Text="Public Domain • Language: English • Updated: 2020-12-20" TextColor="Gray" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Spacing="4">
+                                    <Label FontSize="12" FontAttributes="Bold" Text="American Standard Version (1901)" TextColor="#0066CC" />
+                                    <Label FontSize="10" Text="The American Standard Version of the Holy Bible, first published in 1901" TextColor="Gray" />
+                                    <Label FontSize="10" Text="Public Domain • Language: English • Dialect: Archaic American" TextColor="Gray" />
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Frame>
                     </VerticalStackLayout>
 
                     <!-- Book List -->

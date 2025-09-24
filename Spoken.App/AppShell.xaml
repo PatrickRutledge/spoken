@@ -14,13 +14,6 @@
             Route="MainPage" />
     </FlyoutItem>
     
-    <FlyoutItem Title="Translations">
-        <ShellContent
-            Title="Manage Translations"
-            ContentTemplate="{DataTemplate local:TranslationsPage}"
-            Route="TranslationsPage" />
-    </FlyoutItem>
-    
     <FlyoutItem Title="About">
         <ShellContent
             Title="About and Privacy"

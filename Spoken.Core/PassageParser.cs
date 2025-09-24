@@ -113,6 +113,12 @@ public class PassageParser
 
         input = input.Trim().TrimEnd(',', '.', ';', '!', '?');
 
+        // Check for cross-book ranges and reject them
+        if (ContainsCrossBookRange(input))
+        {
+            return ParseResult.Error("Cross-book ranges are not supported. Please select passages within a single book at a time.");
+        }
+
         // Try different patterns in order of specificity
         
         // Pattern: "Book Chapter:Verse-Chapter:Verse" (e.g., "John 3:16-4:2")
@@ -255,6 +261,30 @@ public class PassageParser
             return ParseResult.Error(error);
 
         return ParseResult.Success(book.FullName, book.UsfmCode, null, null, null, null);
+    }
+
+    private static bool ContainsCrossBookRange(string input)
+    {
+        // Look for patterns that might indicate cross-book ranges
+        // Examples: "Genesis 1:31 - Leviticus 5:10", "Matt 1:1 - Mark 2:5"
+        var crossBookPattern = new Regex(@"^(.+?)\s+\d+:\d+\s*-\s*(.+?)\s+\d+:\d+$", RegexOptions.IgnoreCase);
+        var match = crossBookPattern.Match(input);
+        
+        if (match.Success)
+        {
+            var firstBook = match.Groups[1].Value.Trim();
+            var secondBook = match.Groups[2].Value.Trim();
+            
+            // Try to resolve both book names
+            if (TryResolveBook(firstBook, out var book1, out _) && 
+                TryResolveBook(secondBook, out var book2, out _))
+            {
+                // If both are valid books and they're different, it's a cross-book range
+                return !book1.UsfmCode.Equals(book2.UsfmCode, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        
+        return false;
     }
 
     private static bool TryResolveBook(string bookStr, out (string FullName, string UsfmCode, int MaxChapters) book, out string error)
