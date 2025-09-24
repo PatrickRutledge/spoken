@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="Spoken.App.AboutPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             Title="About Spoken">
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="20">
+            <Image Source="Resources/AppIcon/appicon.svg" 
+                   HeightRequest="128" 
+                   WidthRequest="128" 
+                   HorizontalOptions="Center" />
+            
+            <Label Text="Spoken" 
+                   FontSize="32" 
+                   FontAttributes="Bold" 
+                   HorizontalOptions="Center" />
+            
+            <Label Text="Biblical Text Reader" 
+                   FontSize="18" 
+                   HorizontalOptions="Center" 
+                   TextColor="Gray" />
+            
+            <Label Text="Version 1.0.0" 
+                   FontSize="16" 
+                   HorizontalOptions="Center" 
+                   TextColor="Gray" />
+            
+            <BoxView Color="LightGray" HeightRequest="1" Margin="0,20,0,20" />
+            
+            <Label Text="About Spoken" 
+                   FontSize="20" 
+                   FontAttributes="Bold" />
+            
+            <Label Text="Spoken is a comprehensive biblical text reader that helps you study and format scripture passages with ease. Features include multiple translation support, advanced passage parsing, tabbed sessions, and beautiful PDF export capabilities."
+                   FontSize="16" 
+                   TextColor="Gray" />
+            
+            <Label Text="Features:" 
+                   FontSize="18" 
+                   FontAttributes="Bold" 
+                   Margin="0,20,0,5" />
+            
+            <Label Text="• Multiple biblical translations with catalog downloads&#10;• Advanced passage reference parsing and validation&#10;• Tabbed reading sessions with persistence&#10;• Beautiful PDF export for study and sharing&#10;• Enhanced USFM text processing&#10;• Completely offline after translation download"
+                   FontSize="16" 
+                   TextColor="Gray" />
+            
+            <BoxView Color="LightGray" HeightRequest="1" Margin="0,20,0,20" />
+            
+            <Label Text="Privacy and Data" 
+                   FontSize="20" 
+                   FontAttributes="Bold" />
+            
+            <Label Text="Spoken prioritizes your privacy:"
+                   FontSize="16" 
+                   TextColor="Gray" />
+            
+            <Label Text="• No personal data collection or tracking&#10;• All reading sessions stored locally on your device&#10;• No cloud sync or external data transmission&#10;• Network access only for downloading biblical translations"
+                   FontSize="16" 
+                   TextColor="Gray" 
+                   Margin="0,10,0,0" />
+            
+            <Button Text="View Privacy Policy" 
+                    Clicked="OnPrivacyPolicyClicked" 
+                    BackgroundColor="#0A5BCB" 
+                    TextColor="White" 
+                    CornerRadius="8" 
+                    Margin="0,20,0,0" />
+            
+            <BoxView Color="LightGray" HeightRequest="1" Margin="0,20,0,20" />
+            
+            <Label Text="© 2024 Aether Forge" 
+                   FontSize="14" 
+                   HorizontalOptions="Center" 
+                   TextColor="Gray" />
+            
+            <Label Text="Made with love for biblical study" 
+                   FontSize="14" 
+                   HorizontalOptions="Center" 
+                   TextColor="Gray" />
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

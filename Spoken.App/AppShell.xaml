@@ -4,12 +4,28 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:Spoken.App"
-    Shell.FlyoutBehavior="Disabled"
+    Shell.FlyoutBehavior="Flyout"
     Title="Spoken">
 
-    <ShellContent
-        Title="Spoken"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <FlyoutItem Title="Bible Reader">
+        <ShellContent
+            Title="Reader"
+            ContentTemplate="{DataTemplate local:MainPage}"
+            Route="MainPage" />
+    </FlyoutItem>
+    
+    <FlyoutItem Title="Translations">
+        <ShellContent
+            Title="Manage Translations"
+            ContentTemplate="{DataTemplate local:TranslationsPage}"
+            Route="TranslationsPage" />
+    </FlyoutItem>
+    
+    <FlyoutItem Title="About">
+        <ShellContent
+            Title="About and Privacy"
+            ContentTemplate="{DataTemplate local:AboutPage}"
+            Route="AboutPage" />
+    </FlyoutItem>
 
 </Shell>

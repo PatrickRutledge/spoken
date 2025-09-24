@@ -81,13 +81,25 @@ public static class BookMaps
 public class UsfmZipTextSource : ITextSource
 {
     private readonly string _versionsDir;
+    private readonly string _catalogCacheDir;
     private static readonly Regex Chapter = new(@"^\\c\s+(\d+)", RegexOptions.Compiled);
     private static readonly Regex Verse = new(@"^\\v\s+(\d+)\s+(.*)$", RegexOptions.Compiled);
     private static readonly Regex Id = new(@"^\\id\s+(\S+)", RegexOptions.Compiled);
+    private static readonly Regex PoetryMarker = new(@"^\\q(\d?)\s*(.*)", RegexOptions.Compiled);
+    private static readonly Regex ParagraphMarker = new(@"^\\[pm]\s*(.*)", RegexOptions.Compiled);
+    private static readonly Regex FootnotePattern = new(@"\\f\s+[^\\]*?\\f\*", RegexOptions.Compiled);
+    private static readonly Regex CrossRefPattern = new(@"\\x\s+[^\\]*?\\x\*", RegexOptions.Compiled);
+    private static readonly Regex StrongsPattern = new(@"\\w\s+([^\\|]*)\|[^\\]*?\\w\*", RegexOptions.Compiled);
+    private static readonly Regex WordPattern = new(@"\\w\s+([^\\]*?)\\w\*", RegexOptions.Compiled);
+    private static readonly Regex AddPattern = new(@"\\add\s+([^\\]*?)\\add\*", RegexOptions.Compiled);
+    private static readonly Regex NdPattern = new(@"\\nd\s+([^\\]*?)\\nd\*", RegexOptions.Compiled);
+    private static readonly Regex SectionHeadingPattern = new(@"^\\s\d?\s+.*", RegexOptions.Compiled);
+    private static readonly Regex IntroPattern = new(@"^\\i[sp]\d?\s+.*", RegexOptions.Compiled);
 
-    public UsfmZipTextSource(string? versionsDir = null)
+    public UsfmZipTextSource(string? versionsDir = null, string? catalogCacheDir = null)
     {
         _versionsDir = versionsDir ?? Path.Combine(Directory.GetCurrentDirectory(), "versions");
+        _catalogCacheDir = catalogCacheDir ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Spoken", "translations");
     }
 
     public async IAsyncEnumerable<Verse> GetVersesAsync(string translationCode, string book, int? chapterStart, int? verseStart, int? chapterEnd, int? verseEnd, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
@@ -96,14 +108,14 @@ public class UsfmZipTextSource : ITextSource
         if (zipPath is null)
         {
             // Fallback single verse to avoid hard failure
-            yield return new Verse { Book = book, Chapter = chapterStart ?? 1, Number = verseStart ?? 1, Text = $"[Missing translation: {translationCode}]", IsPoetryHint = false };
+            yield return new Verse { Book = book, Chapter = chapterStart ?? 1, Number = verseStart ?? 1, Text = $"[Missing translation: {translationCode}]", IsPoetryHint = false, PoetryLevel = 0 };
             yield break;
         }
 
         var targetUsfm = BookMaps.NameToUsfm.TryGetValue(book, out var usfmCode) ? usfmCode : null;
         if (targetUsfm is null)
         {
-            yield return new Verse { Book = book, Chapter = chapterStart ?? 1, Number = verseStart ?? 1, Text = $"[Unknown book: {book}]", IsPoetryHint = false };
+            yield return new Verse { Book = book, Chapter = chapterStart ?? 1, Number = verseStart ?? 1, Text = $"[Unknown book: {book}]", IsPoetryHint = false, PoetryLevel = 0 };
             yield break;
         }
 
@@ -115,16 +127,33 @@ public class UsfmZipTextSource : ITextSource
             string? line;
             string? currentId = null;
             int currentChapter = 0;
-            bool poetry = false;
+            int poetryLevel = 0;
+            var versePendingLines = new List<string>();
+            int? currentVerseNum = null;
+
             while ((line = await reader.ReadLineAsync()) != null)
             {
                 if (ct.IsCancellationRequested) yield break;
+                line = line.Trim();
                 if (line.Length == 0) continue;
+
+                // Skip section headings and introductory material
+                if (SectionHeadingPattern.IsMatch(line) || IntroPattern.IsMatch(line))
+                    continue;
+
                 var mId = Id.Match(line);
                 if (mId.Success)
                 {
+                    // Flush any pending verse
+                    if (currentVerseNum.HasValue && versePendingLines.Count > 0)
+                    {
+                        yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                        versePendingLines.Clear();
+                        currentVerseNum = null;
+                    }
+                    
                     currentId = mId.Groups[1].Value.Trim();
-                    poetry = false;
+                    poetryLevel = 0;
                     continue;
                 }
                 if (currentId is null) continue;
@@ -133,44 +162,165 @@ public class UsfmZipTextSource : ITextSource
                 if (!currentId.StartsWith(targetUsfm, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (line.StartsWith("\\q")) { poetry = true; continue; }
-                if (line.StartsWith("\\p")) { poetry = false; continue; }
+                var poetryMatch = PoetryMarker.Match(line);
+                if (poetryMatch.Success)
+                {
+                    poetryLevel = poetryMatch.Groups[1].Success && int.TryParse(poetryMatch.Groups[1].Value, out var level) ? level : 1;
+                    var content = poetryMatch.Groups[2].Value.Trim();
+                    if (!string.IsNullOrEmpty(content))
+                        versePendingLines.Add(content);
+                    continue;
+                }
+
+                var paragraphMatch = ParagraphMarker.Match(line);
+                if (paragraphMatch.Success)
+                {
+                    poetryLevel = 0;
+                    var content = paragraphMatch.Groups[1].Value.Trim();
+                    if (!string.IsNullOrEmpty(content))
+                        versePendingLines.Add(content);
+                    continue;
+                }
 
                 var mC = Chapter.Match(line);
                 if (mC.Success)
                 {
+                    // Flush any pending verse before chapter change
+                    if (currentVerseNum.HasValue && versePendingLines.Count > 0)
+                    {
+                        yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                        versePendingLines.Clear();
+                        currentVerseNum = null;
+                    }
+                    
                     currentChapter = int.Parse(mC.Groups[1].Value);
                     continue;
                 }
+
                 var mV = Verse.Match(line);
                 if (mV.Success)
                 {
-                    int vnum = int.Parse(mV.Groups[1].Value);
-                    string vtext = mV.Groups[2].Value.Trim();
-                    if (WithinRange(currentChapter, vnum, chapterStart, verseStart, chapterEnd, verseEnd))
+                    // Flush previous verse if any
+                    if (currentVerseNum.HasValue && versePendingLines.Count > 0)
                     {
-                        yield return new Verse { Book = book, Chapter = currentChapter, Number = vnum, Text = vtext, IsPoetryHint = poetry };
+                        if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
+                        {
+                            yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                        }
+                        versePendingLines.Clear();
                     }
+
+                    currentVerseNum = int.Parse(mV.Groups[1].Value);
+                    string vtext = mV.Groups[2].Value.Trim();
+                    if (!string.IsNullOrEmpty(vtext))
+                        versePendingLines.Add(vtext);
+                    continue;
+                }
+
+                // Continuation line - add to current verse if we have one
+                if (currentVerseNum.HasValue && !string.IsNullOrEmpty(line))
+                {
+                    versePendingLines.Add(line);
+                }
+            }
+
+            // Flush final verse
+            if (currentVerseNum.HasValue && versePendingLines.Count > 0)
+            {
+                if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
+                {
+                    yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
                 }
             }
         }
     }
 
+    private static Verse CreateVerse(string book, int chapter, int verseNum, List<string> lines, int poetryLevel)
+    {
+        // Join all lines and clean up
+        var text = string.Join(" ", lines).Trim();
+        
+        // Strip footnotes and cross-references first
+        text = FootnotePattern.Replace(text, "");
+        text = CrossRefPattern.Replace(text, "");
+        
+        // Handle Strong's numbers - extract the word but remove the reference
+        text = StrongsPattern.Replace(text, "$1");
+        
+        // Handle simple word markers
+        text = WordPattern.Replace(text, "$1");
+        
+        // Handle added text (italics in print)
+        text = AddPattern.Replace(text, "$1");
+        
+        // Handle name of deity markers
+        text = NdPattern.Replace(text, "$1");
+        
+        // Remove any remaining backslash markers
+        text = Regex.Replace(text, @"\\[a-z]+\*?", "", RegexOptions.IgnoreCase);
+        
+        // Normalize whitespace
+        text = Regex.Replace(text, @"\s+", " ").Trim();
+        
+        return new Verse 
+        { 
+            Book = book, 
+            Chapter = chapter, 
+            Number = verseNum, 
+            Text = text, 
+            IsPoetryHint = poetryLevel > 0,
+            PoetryLevel = poetryLevel
+        };
+    }
+
     private string? FindZipForTranslation(string translationCode)
     {
-        if (!Directory.Exists(_versionsDir)) return null;
-        var files = Directory.GetFiles(_versionsDir, "*.zip", SearchOption.TopDirectoryOnly);
-        if (files.Length == 0) return null;
-        string code = translationCode.ToLowerInvariant();
-        // simple heuristics
-        if (code.Contains("kjv") || code == "kjv")
-            return files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("kjv"));
-        if (code.Contains("asv") || code == "asv")
-            return files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("asv"));
-        if (code.Contains("web") || code == "web")
-            return files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("web"));
-        // fallback any
-        return files.FirstOrDefault();
+        var allDirs = new List<string>();
+        
+        // Check bundled versions directory first
+        if (Directory.Exists(_versionsDir))
+            allDirs.Add(_versionsDir);
+            
+        // Check catalog cache directory second
+        if (Directory.Exists(_catalogCacheDir))
+            allDirs.Add(_catalogCacheDir);
+            
+        if (allDirs.Count == 0) return null;
+        
+        foreach (var dir in allDirs)
+        {
+            var files = Directory.GetFiles(dir, "*.zip", SearchOption.TopDirectoryOnly);
+            if (files.Length == 0) continue;
+            
+            string code = translationCode.ToLowerInvariant();
+            
+            // Try exact filename match first
+            var exactMatch = files.FirstOrDefault(f => 
+                string.Equals(Path.GetFileNameWithoutExtension(f), code, StringComparison.OrdinalIgnoreCase));
+            if (exactMatch != null) return exactMatch;
+            
+            // Try partial matches
+            if (code.Contains("kjv") || code == "kjv")
+            {
+                var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("kjv"));
+                if (match != null) return match;
+            }
+            if (code.Contains("asv") || code == "asv")
+            {
+                var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("asv"));
+                if (match != null) return match;
+            }
+            if (code.Contains("web") || code == "web")
+            {
+                var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("web"));
+                if (match != null) return match;
+            }
+            
+            // Fallback to first file in this directory
+            if (files.Length > 0) return files[0];
+        }
+        
+        return null;
     }
 
     private static bool WithinRange(int chapter, int verse, int? cStart, int? vStart, int? cEnd, int? vEnd)

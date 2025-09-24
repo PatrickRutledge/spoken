@@ -26,6 +26,7 @@ public class Verse
 	public required int Number { get; init; }
 	public required string Text { get; set; }
 	public bool IsPoetryHint { get; set; }
+	public int PoetryLevel { get; set; } = 0;
 }
 
 public class Passage
@@ -49,7 +50,7 @@ public static class ProseFormatter
 	public static string FormatToParagraphs(IEnumerable<Verse> verses, bool applySmallCapsDivineName = true, bool capitalizeDeityPronouns = true, bool smartQuotes = true, bool emDash = true)
 	{
 		var sb = new StringBuilder();
-		// Simple paragraph collector: group by chapter and every ~5-7 verses; poetry verses create shorter paragraphs with line breaks.
+		// Group verses into paragraphs, respecting poetry structure
 		var paragraph = new List<Verse>();
 		void FlushParagraph()
 		{
@@ -65,9 +66,19 @@ public static class ProseFormatter
 		{
 			if (v.IsPoetryHint)
 			{
-				// treat each poetry verse as its own paragraph with internal line break (placeholder)
+				// Flush any pending prose paragraph first
+				FlushParagraph();
+				
+				// Handle poetry with indentation based on level
 				var text = Normalize(v.Text, applySmallCapsDivineName, capitalizeDeityPronouns, smartQuotes, emDash);
-				sb.AppendLine($"<p class=\"para poetry\">{System.Net.WebUtility.HtmlEncode(text)}</p>");
+				var indentClass = v.PoetryLevel switch
+				{
+					0 or 1 => "poetry-1",
+					2 => "poetry-2", 
+					3 => "poetry-3",
+					_ => "poetry-4"
+				};
+				sb.AppendLine($"<p class=\"para poetry {indentClass}\">{System.Net.WebUtility.HtmlEncode(text)}</p>");
 				sb.AppendLine();
 			}
 			else
@@ -121,7 +132,11 @@ public static class ProseFormatter
 html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Georgia, ""Times New Roman"", serif;}
 .container{padding:24px;}
 .para{ text-align: justify; text-justify: inter-word; text-indent: 1.5em; margin: 0 0 1em 0; }
-.para.poetry{ text-indent: 0; }
+.para.poetry{ text-indent: 0; margin: 0.5em 0; }
+.para.poetry-1{ margin-left: 0; }
+.para.poetry-2{ margin-left: 1.5em; }
+.para.poetry-3{ margin-left: 3em; }
+.para.poetry-4{ margin-left: 4.5em; }
 .sc{ font-variant-caps: small-caps; }
 .title{ color:#0A5BCB; font-weight:600; margin:0 0 16px 0; }
 </style>";

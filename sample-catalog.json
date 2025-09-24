@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "lastUpdated": "2025-09-23T00:00:00Z",
+  "translations": [
+    {
+      "code": "ESV",
+      "name": "English Standard Version",
+      "language": "English",
+      "description": "A contemporary translation emphasizing word-for-word accuracy and literary excellence.",
+      "copyright": "© 2001 by Crossway Bibles, a publishing ministry of Good News Publishers.",
+      "attribution": "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
+      "downloadUrl": "https://example.com/translations/esv.zip",
+      "checksum": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+      "sizeBytes": 2048000,
+      "publishedDate": "2024-01-01T00:00:00Z",
+      "features": ["poetry", "footnotes"]
+    },
+    {
+      "code": "NIV",
+      "name": "New International Version",
+      "language": "English", 
+      "description": "A balance between word-for-word and thought-for-thought translation approaches.",
+      "copyright": "© 1973, 1978, 1984, 2011 by Biblica, Inc.",
+      "attribution": "Scripture taken from the Holy Bible, NEW INTERNATIONAL VERSION®, NIV® Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.",
+      "downloadUrl": "https://example.com/translations/niv.zip", 
+      "checksum": "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567",
+      "sizeBytes": 1856000,
+      "publishedDate": "2024-01-01T00:00:00Z",
+      "features": ["poetry"]
+    },
+    {
+      "code": "RVR60",
+      "name": "Reina-Valera 1960",
+      "language": "Spanish",
+      "description": "Classic Spanish Bible translation widely used in Latin America.",
+      "copyright": "© 1960 Sociedades Bíblicas Unidas",
+      "attribution": "Reina-Valera 1960® © Sociedades Bíblicas Unidas, 1960. Used by permission.",
+      "downloadUrl": "https://example.com/translations/rvr60.zip",
+      "checksum": "c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678",
+      "sizeBytes": 1792000,
+      "publishedDate": "2024-01-01T00:00:00Z",
+      "features": ["poetry", "footnotes"]
+    }
+  ]
+}

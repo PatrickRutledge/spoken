@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Spoken.App.TranslationsPage"
+             Title="Translations">
+    <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*">
+        <!-- Header -->
+        <Grid BackgroundColor="{StaticResource Primary}" Padding="16" Row="0">
+            <Label Text="Manage Translations" TextColor="White" FontSize="18" FontAttributes="Bold"/>
+        </Grid>
+
+        <!-- Actions Bar -->
+        <Grid Row="1" Padding="8" ColumnDefinitions="*,Auto,Auto" BackgroundColor="#F8F9FA">
+            <Label Grid.Column="0" Text="Available and installed translations" VerticalOptions="Center" FontSize="14" TextColor="#666"/>
+            <Button Grid.Column="1" Text="Refresh Catalog" Clicked="OnRefreshClicked" 
+                    BackgroundColor="Transparent" TextColor="{StaticResource Primary}" Margin="4,0"/>
+            <ActivityIndicator Grid.Column="2" x:Name="LoadingIndicator" IsVisible="False" Color="{StaticResource Primary}"/>
+        </Grid>
+
+        <!-- Translations List -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout x:Name="TranslationsContainer" Padding="16" Spacing="8">
+                <!-- Will be populated dynamically -->
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
