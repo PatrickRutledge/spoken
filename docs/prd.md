@@ -8,7 +8,7 @@ Status: Draft for review
 ---
 
 ## 1) Summary
-A modern, fast, and accessible Bible reading app for Windows distributed via the Microsoft Store. Focus on distraction-free reading, fast navigation, robust offline support, and a clean Fluent UI that feels native on Windows 11. The app will initially ship with public-domain translations (e.g., KJV, WEB) and lay the groundwork to license additional translations and audio. A future phase will deliver an iOS app with maximum code reuse.
+A modern, fast, and accessible Bible reading app for Windows distributed via the Microsoft Store. Focus on distraction-free reading, fast navigation, robust offline support, and a clean Fluent UI that feels native on Windows 11. The app initially ships with two carefully curated public-domain translations (KJV and ASV) using scholarly USFM formatting standards. Additional translations will be added in future versions based on user requests and technical feasibility.
 
 Primary platform now: Windows (Microsoft Store)
 Secondary platform later: iOS
@@ -50,7 +50,7 @@ Windows users lack a deeply native-feeling Bible app in the Microsoft Store that
 
 ## 5) Scope
 MVP scope (Windows) includes:
-- Translations: Bundle KJV, ASV, and WEB inside the app for immediate offline use. Additional foreign-language public-domain versions are discoverable via a curated online catalog and downloadable on demand.
+- Translations: Bundle KJV (Cambridge Paragraph Bible) and ASV inside the app for immediate offline use. These versions use scholarly USFM paragraph structure that preserves biblical manuscript traditions. Additional translations will be considered for future versions based on user feedback and requests.
 - Passage Selection & Formatting: User selects a version and a passage (supports whole book and range Book Chapter:Verse – Chapter:Verse). On click, app generates a prose-formatted view: removes chapter/verse/headings, outputs justified paragraphs with one blank line between paragraphs, indented first-line. Poetry rendered as paragraph blocks with preserved internal line breaks for flow.
 - HTML Output Tabs: Each formatted output opens in a new in-app HTML tab. Tabs persist across app restarts.
 - Export: Export to PDF with footer containing the passage reference and page numbering as "Page n of X"; numbering restarts for each export. Default to Letter size. If an e-reader export is included later (EPUB/MOBI), use device defaults; out-of-scope for MVP but design kept compatible.
@@ -111,8 +111,9 @@ Theming & Settings
 - Font size, line height; optional font family choices (Georgia, EB Garamond, Merriweather, Lora, Crimson Pro, Inter)
 - Default translation selection; manage translation downloads
 
-- Bundled PD translations in app: KJV, ASV, WEB
-- Additional public-domain translations (primarily foreign languages) downloadable via curated catalog endpoint; versions cached locally
+- Bundled PD translations in app: KJV (Cambridge Paragraph Bible), ASV
+- **USFM Scholarly Formatting**: Paragraph breaks follow biblical manuscript traditions using the Unified Standard Format Markers (USFM) standard, preserving authentic theological thought units
+- **Future Translation Strategy**: Additional translations will be added based on user requests. Users can contact us to request specific versions they'd like to see included
 - Include short attribution line per translation in HTML/PDF footer
 
 Accessibility

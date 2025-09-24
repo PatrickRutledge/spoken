@@ -95,6 +95,8 @@ public class UsfmZipTextSource : ITextSource
     private static readonly Regex NdPattern = new(@"\\nd\s+([^\\]*?)\\nd\*", RegexOptions.Compiled);
     private static readonly Regex SectionHeadingPattern = new(@"^\\s\d?\s+.*", RegexOptions.Compiled);
     private static readonly Regex IntroPattern = new(@"^\\i[sp]\d?\s+.*", RegexOptions.Compiled);
+    private static readonly Regex TitlePattern = new(@"^\\(mt|h|toc)\d?\s+.*", RegexOptions.Compiled);
+    private static readonly Regex HeaderPattern = new(@"^\\(ide|rem|cp|ca|va|vp)\s+.*", RegexOptions.Compiled);
 
     public UsfmZipTextSource(string? versionsDir = null, string? catalogCacheDir = null)
     {
@@ -130,6 +132,7 @@ public class UsfmZipTextSource : ITextSource
             int poetryLevel = 0;
             var versePendingLines = new List<string>();
             int? currentVerseNum = null;
+            bool currentVerseIsNewParagraph = false;
 
             while ((line = await reader.ReadLineAsync()) != null)
             {
@@ -137,8 +140,9 @@ public class UsfmZipTextSource : ITextSource
                 line = line.Trim();
                 if (line.Length == 0) continue;
 
-                // Skip section headings and introductory material
-                if (SectionHeadingPattern.IsMatch(line) || IntroPattern.IsMatch(line))
+                // Skip section headings, introductory material, titles, and headers
+                if (SectionHeadingPattern.IsMatch(line) || IntroPattern.IsMatch(line) || 
+                    TitlePattern.IsMatch(line) || HeaderPattern.IsMatch(line))
                     continue;
 
                 var mId = Id.Match(line);
@@ -147,9 +151,13 @@ public class UsfmZipTextSource : ITextSource
                     // Flush any pending verse
                     if (currentVerseNum.HasValue && versePendingLines.Count > 0)
                     {
-                        yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                        if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
+                        {
+                            yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel, currentVerseIsNewParagraph);
+                        }
                         versePendingLines.Clear();
                         currentVerseNum = null;
+                        currentVerseIsNewParagraph = false; // Reset paragraph flag
                     }
                     
                     currentId = mId.Groups[1].Value.Trim();
@@ -176,6 +184,7 @@ public class UsfmZipTextSource : ITextSource
                 if (paragraphMatch.Success)
                 {
                     poetryLevel = 0;
+                    currentVerseIsNewParagraph = true; // Current verse being built starts a new paragraph
                     var content = paragraphMatch.Groups[1].Value.Trim();
                     if (!string.IsNullOrEmpty(content))
                         versePendingLines.Add(content);
@@ -188,9 +197,13 @@ public class UsfmZipTextSource : ITextSource
                     // Flush any pending verse before chapter change
                     if (currentVerseNum.HasValue && versePendingLines.Count > 0)
                     {
-                        yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                        if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
+                        {
+                            yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel, currentVerseIsNewParagraph);
+                        }
                         versePendingLines.Clear();
                         currentVerseNum = null;
+                        currentVerseIsNewParagraph = false; // Reset paragraph flag
                     }
                     
                     currentChapter = int.Parse(mC.Groups[1].Value);
@@ -205,9 +218,10 @@ public class UsfmZipTextSource : ITextSource
                     {
                         if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
                         {
-                            yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                            yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel, currentVerseIsNewParagraph);
                         }
                         versePendingLines.Clear();
+                        currentVerseIsNewParagraph = false; // Reset paragraph flag after using it
                     }
 
                     currentVerseNum = int.Parse(mV.Groups[1].Value);
@@ -229,13 +243,13 @@ public class UsfmZipTextSource : ITextSource
             {
                 if (WithinRange(currentChapter, currentVerseNum.Value, chapterStart, verseStart, chapterEnd, verseEnd))
                 {
-                    yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel);
+                    yield return CreateVerse(book, currentChapter, currentVerseNum.Value, versePendingLines, poetryLevel, currentVerseIsNewParagraph);
                 }
             }
         }
     }
 
-    private static Verse CreateVerse(string book, int chapter, int verseNum, List<string> lines, int poetryLevel)
+    private static Verse CreateVerse(string book, int chapter, int verseNum, List<string> lines, int poetryLevel, bool isNewParagraph = false)
     {
         // Join all lines and clean up
         var text = string.Join(" ", lines).Trim();
@@ -269,7 +283,8 @@ public class UsfmZipTextSource : ITextSource
             Number = verseNum, 
             Text = text, 
             IsPoetryHint = poetryLevel > 0,
-            PoetryLevel = poetryLevel
+            PoetryLevel = poetryLevel,
+            IsNewParagraph = isNewParagraph
         };
     }
 
@@ -302,6 +317,14 @@ public class UsfmZipTextSource : ITextSource
             // Try partial matches
             if (code.Contains("kjv") || code == "kjv")
             {
+                // Prioritize the cleanest KJV versions in order of preference
+                var cleanestKjv = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("engkjvcpb"));
+                if (cleanestKjv != null) return cleanestKjv;
+                
+                var kjv2006 = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("kjv2006"));
+                if (kjv2006 != null) return kjv2006;
+                
+                // Fall back to any other KJV version as last resort
                 var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("kjv"));
                 if (match != null) return match;
             }
@@ -310,11 +333,7 @@ public class UsfmZipTextSource : ITextSource
                 var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("asv"));
                 if (match != null) return match;
             }
-            if (code.Contains("web") || code == "web")
-            {
-                var match = files.FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant().Contains("web"));
-                if (match != null) return match;
-            }
+            // WEB and other translations removed - only support KJV and ASV
             
             // Fallback to first file in this directory
             if (files.Length > 0) return files[0];
@@ -323,17 +342,19 @@ public class UsfmZipTextSource : ITextSource
         return null;
     }
 
+    private static int Cmp(int a1, int a2, int b1, int b2)
+        => a1 != b1 ? a1.CompareTo(b1) : a2.CompareTo(b2);
+
     private static bool WithinRange(int chapter, int verse, int? cStart, int? vStart, int? cEnd, int? vEnd)
     {
-        if (cStart is null) return true;
-        int cs = cStart ?? 1, vs = vStart ?? 1, ce = cEnd ?? cs, ve = vEnd ?? vs;
-        if (chapter < cs || chapter > ce) return false;
-        if (cs == ce)
-        {
-            return verse >= vs && verse <= ve;
-        }
-        if (chapter == cs) return verse >= vs;
-        if (chapter == ce) return verse <= ve;
-        return true;
+        if (cStart is null || vStart is null) return false;
+
+        int cs = cStart.Value, vs = vStart.Value;
+        int ce = cEnd ?? cs,    ve = vEnd ?? vs;
+
+        // Normalize if the inputs are reversed
+        if (Cmp(cs, vs, ce, ve) > 0) { (cs, vs, ce, ve) = (ce, ve, cs, vs); }
+
+        return Cmp(cs, vs, chapter, verse) <= 0 && Cmp(chapter, verse, ce, ve) <= 0;
     }
 }

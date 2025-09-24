@@ -1,4 +1,16 @@
-# Versions Packaging (Developer Notes)
+# Input formats supported
+- USFM (preferred): one .usfm file per book, zipped per translation (e.g., eng-kjv_usfm.zip)
+- Currently focusing on high-quality USFM sources for scholarly accuracy
+
+Currently bundled translations
+- versions/
+  - engkjvcpb_usfm.zip (KJV - Cambridge Paragraph Bible edition)
+  - eng-asv_usfm.zip (ASV - American Standard Version)
+
+Bundling strategy
+- Bundle only KJV and ASV within the app package for offline-first operation
+- Focus on quality over quantity - each translation is carefully vetted
+- Future translations will be added based on user requests and technical feasibility (Developer Notes)
 
 Input formats supported
 - USFM (preferred): one .usfm file per book, zipped per translation (e.g., eng-kjv_usfm.zip)
@@ -19,14 +31,19 @@ Bundling strategy
 - Bundle KJV, ASV, WEB within the app package for offline-first.
 - All others via catalog downloads. Keep the app size lean.
 
-USFM ingestion notes
-- We honor paragraph/poetry markers but render prose:
+USFM ingestion notes - Scholarly Formatting Standards
+- **Paragraph Structure**: We strictly honor USFM paragraph markers (\p, \m) to preserve biblical manuscript traditions
+  - Paragraph breaks may occur mid-sentence to maintain theological thought units
+  - Each paragraph represents a complete literary or thematic unit as determined by biblical scholars
+  - This matches the formatting found in academic study Bibles and scholarly editions
+- **Text Processing**: 
   - Remove chapter/verse numbers and editorial headings
   - Paragraphs: justified, first-line indent, one blank line spacing
-  - Poetry: keep internal line breaks within paragraph blocks for flow
+  - Poetry: preserve USFM poetry markers (\q, \q1, \q2) with appropriate indentation
   - Small caps for the divine name (e.g., LORD)
   - Capitalize pronouns for Deity (He, Him, His, etc.) in English
   - Smart quotes and em-dash normalization
+- **Why Mid-Sentence Breaks**: USFM preserves Hebrew and Greek manuscript structure where thematic shifts, speakers, or narrative actions create natural divisions that don't always align with English sentence structure
 
 Attribution
 - Provide a short distribution/attribution line per translation (displayed in HTML/PDF footer).

@@ -3,42 +3,90 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Spoken.App.MainPage"
              Title="Spoken">
-    <Grid RowDefinitions="Auto,Auto,*,Auto" ColumnDefinitions="*">
-        <!-- Top bar -->
-        <Grid BackgroundColor="{StaticResource Primary}" Padding="16" Row="0">
-            <Label Text="Spoken" TextColor="White" FontSize="20" FontAttributes="Bold"/>
+    <Grid RowDefinitions="*,Auto" ColumnDefinitions="*">
+        <!-- Content -->
+        <Grid Grid.Row="0" ColumnDefinitions="320,*" Padding="16">
+            <!-- Left Panel: Book List & Passage Selection -->
+            <ScrollView Grid.Column="0" Margin="0,0,16,0">
+                <VerticalStackLayout Spacing="16">
+                    <!-- Passage Selection -->
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Select Passage Range:" FontSize="16" FontAttributes="Bold" />
+                        
+                        <!-- Start Passage -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="From:" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
+                            <Grid ColumnDefinitions="*,70,70" ColumnSpacing="8">
+                                <Picker x:Name="StartBookPicker" Grid.Column="0" Title="Select Book" SelectedIndexChanged="OnStartBookChanged" />
+                                <Picker x:Name="StartChapterPicker" Grid.Column="1" Title="Ch" SelectedIndexChanged="OnStartChapterChanged" />
+                                <Picker x:Name="StartVersePicker" Grid.Column="2" Title="Vs" SelectedIndexChanged="OnPassageSelectionChanged" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- End Passage -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="To:" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource Primary}" />
+                            <Grid ColumnDefinitions="*,70,70" ColumnSpacing="8">
+                                <Picker x:Name="EndBookPicker" Grid.Column="0" Title="Select Book" SelectedIndexChanged="OnEndBookChanged" />
+                                <Picker x:Name="EndChapterPicker" Grid.Column="1" Title="Ch" SelectedIndexChanged="OnEndChapterChanged" />
+                                <Picker x:Name="EndVersePicker" Grid.Column="2" Title="Vs" SelectedIndexChanged="OnPassageSelectionChanged" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <!-- Translation & Title -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Translation:" FontSize="14" FontAttributes="Bold" />
+                            <Picker x:Name="TranslationPicker" SelectedIndexChanged="OnPassageSelectionChanged">
+                                <Picker.Items>
+                                    <x:String>KJV</x:String>
+                                    <x:String>ASV</x:String>
+                                </Picker.Items>
+                            </Picker>
+                            
+                            <Label Text="Title (optional):" FontSize="14" FontAttributes="Bold" />
+                            <Entry x:Name="TitleEntry" Placeholder="Enter a title" TextChanged="OnTitleChanged" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <!-- Action Buttons -->
+                    <VerticalStackLayout Spacing="8">
+                        <Button Text="� Get Passage" Clicked="OnGetPassageClicked" BackgroundColor="{StaticResource Secondary}" TextColor="White"/>
+                        <Button Text="�📄 Format Text" Clicked="OnFormatClicked" BackgroundColor="{StaticResource Primary}" TextColor="White"/>
+                        <Button Text="📁 Export PDF" Clicked="OnExportPdfClicked" BackgroundColor="#28A745" TextColor="White"/>
+                    </VerticalStackLayout>
+
+                    <!-- Book List -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Browse Books:" FontSize="16" FontAttributes="Bold" />
+                        <Frame BackgroundColor="#F8F9FA" Padding="8" HasShadow="False">
+                            <VerticalStackLayout x:Name="BookListPanel" Spacing="2" />
+                        </Frame>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Right Panel: Preview -->
+            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                <!-- Preview Header -->
+                <HorizontalStackLayout Spacing="16">
+                    <Label x:Name="PreviewTitle" Text="Preview" FontSize="18" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label x:Name="PassageReference" Text="Select a passage to preview" FontSize="14" TextColor="Gray" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Preview Content -->
+                <Frame BackgroundColor="White" Padding="0" HasShadow="True">
+                    <WebView x:Name="Preview" HeightRequest="500" />
+                </Frame>
+            </VerticalStackLayout>
         </Grid>
 
-        <!-- Tabs bar -->
-        <ScrollView Grid.Row="1" Orientation="Horizontal" BackgroundColor="#F4F6FA">
-            <HorizontalStackLayout x:Name="TabBar" Spacing="4" Padding="8" />
-        </ScrollView>
-
-        <!-- Content -->
-        <ScrollView Grid.Row="2">
-            <VerticalStackLayout Padding="16" Spacing="12">
-                <HorizontalStackLayout Spacing="8">
-                    <Entry x:Name="PassageEntry" Placeholder="Passage (e.g., John 3:16-18)" HorizontalOptions="FillAndExpand"/>
-                    <Picker x:Name="TranslationPicker" WidthRequest="140">
-                        <Picker.Items>
-                            <x:String>KJV</x:String>
-                            <x:String>ASV</x:String>
-                            <x:String>WEB</x:String>
-                        </Picker.Items>
-                    </Picker>
-                </HorizontalStackLayout>
-                <Entry x:Name="TitleEntry" Placeholder="Optional title or note heading"/>
-                <HorizontalStackLayout Spacing="8">
-                    <Button Text="Format" Clicked="OnFormatClicked" BackgroundColor="{StaticResource Primary}" TextColor="White"/>
-                    <Button Text="Export PDF" Clicked="OnExportPdfClicked"/>
-                </HorizontalStackLayout>
-                <WebView x:Name="Preview" HeightRequest="600"/>
-            </VerticalStackLayout>
-        </ScrollView>
-
         <!-- Footer -->
-        <Grid Row="3" Padding="8">
-            <Label Text="KJV/ASV/WEB bundled · Minimal blue theme" FontSize="12" TextColor="Gray"/>
+        <Grid Grid.Row="1" BackgroundColor="#F8F9FA" Padding="16,8">
+            <HorizontalStackLayout Spacing="16">
+                <Label x:Name="FooterCitation" Text="Select a passage to view citation" FontSize="12" TextColor="Gray"/>
+                <Label Text="·" FontSize="12" TextColor="Gray"/>
+                <Label Text="KJV/ASV bundled" FontSize="12" TextColor="Gray"/>
+            </HorizontalStackLayout>
         </Grid>
     </Grid>
 </ContentPage>

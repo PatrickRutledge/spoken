@@ -31,7 +31,16 @@
                    FontSize="20" 
                    FontAttributes="Bold" />
             
-            <Label Text="Spoken is a comprehensive biblical text reader that helps you study and format scripture passages with ease. Features include multiple translation support, advanced passage parsing, tabbed sessions, and beautiful PDF export capabilities."
+            <Label Text="Spoken is a scholarly biblical text reader that formats Scripture using academic standards. Currently includes KJV and ASV translations, with plans to add more based on user requests."
+                   FontSize="16" 
+                   TextColor="Gray" />
+            
+            <Label Text="USFM Scholarly Formatting:" 
+                   FontSize="18" 
+                   FontAttributes="Bold" 
+                   Margin="0,20,0,5" />
+            
+            <Label Text="Spoken uses the Unified Standard Format Markers (USFM) to preserve authentic biblical text structure. Paragraph breaks follow manuscript traditions and may occur mid-sentence to maintain theological thought units, just like academic study Bibles."
                    FontSize="16" 
                    TextColor="Gray" />
             
@@ -40,7 +49,16 @@
                    FontAttributes="Bold" 
                    Margin="0,20,0,5" />
             
-            <Label Text="• Multiple biblical translations with catalog downloads&#10;• Advanced passage reference parsing and validation&#10;• Tabbed reading sessions with persistence&#10;• Beautiful PDF export for study and sharing&#10;• Enhanced USFM text processing&#10;• Completely offline after translation download"
+            <Label Text="• KJV (Cambridge Paragraph Bible) and ASV translations&#10;• Scholarly USFM paragraph structure preservation&#10;• Advanced passage reference parsing and validation&#10;• Beautiful PDF export with proper formatting&#10;• Small caps divine name and smart typography&#10;• Completely offline operation"
+                   FontSize="16" 
+                   TextColor="Gray" />
+            
+            <Label Text="Future Plans:" 
+                   FontSize="18" 
+                   FontAttributes="Bold" 
+                   Margin="0,20,0,5" />
+            
+            <Label Text="We plan to add more biblical translations based on user requests and technical feasibility. Contact us to request specific versions you'd like to see included."
                    FontSize="16" 
                    TextColor="Gray" />
             

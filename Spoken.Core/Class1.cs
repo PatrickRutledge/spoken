@@ -27,6 +27,7 @@ public class Verse
 	public required string Text { get; set; }
 	public bool IsPoetryHint { get; set; }
 	public int PoetryLevel { get; set; } = 0;
+	public bool IsNewParagraph { get; set; } = false;
 }
 
 public class Passage
@@ -46,6 +47,22 @@ public static class ProseFormatter
 	private static readonly Regex DeityPronouns = new(@"\b(he|him|his|himself|thy|thee|thou)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 	private static readonly Regex StraightQuotes = new("\"|'", RegexOptions.Compiled);
 	private static readonly Regex DoubleHyphen = new("--", RegexOptions.Compiled);
+	private static readonly Regex StrongsNumbers = new(@"<[GH]\d+>|[GH]\d+|\{\d+\}|\[\d+\]|\\?\+w[^\\]*\\?\+w\*?|\\?\+nd\*?|\|strong=""[^""]*""|\\?\+[^\\]*\\?\+|\+ \d+\.\d+ [^¶]+|¶", RegexOptions.Compiled);
+	private static readonly Regex StrongsPrefix = new(@"w [A-Z]+ \d+\.\d+[^:]*:", RegexOptions.Compiled);
+	private static readonly Regex StrongsInline = new(@"w [A-Z]+\\?\+[^\\]*\\?\+[^*]*\*?", RegexOptions.Compiled);
+	private static readonly Regex StrongsDouble = new(@"w [A-Z]+ [A-Z]+\\?\+[^\\]*\\?\+[^*]*\*?", RegexOptions.Compiled);
+	private static readonly Regex FootnoteReferences = new(@"\+\s*\d+\.\d+\s+[^:]+:\s+[^+¶]+(?=[\+¶]|$)", RegexOptions.Compiled);
+	private static readonly Regex HebrewWithMarkers = new(@"wh [^\s]+\\?\+wh\*", RegexOptions.Compiled);
+	private static readonly Regex CrossReferences = new(@"\+\s+\d+:\d+[^.]+\.", RegexOptions.Compiled);
+	private static readonly Regex VerseExplanations = new(@"\d+:\d+\s+[^.]+\.", RegexOptions.Compiled);
+	private static readonly Regex EtcRemnants = new(@"\s+etc\.|\s*,\s*and\s+the\s+morning\s+was\s+etc\.|was\s+etc\.", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+	private static readonly Regex OrphanWords = new(@"\s+(expansion|tender\s+grass|creeping|soul)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+	private static readonly Regex UsfmFootnotes = new(@"\\f\s*\+[^\\]*\\f\*", RegexOptions.Compiled);
+	private static readonly Regex UsfmAdditions = new(@"\\add\s*([^\\]*?)\\add\*", RegexOptions.Compiled);
+	private static readonly Regex UsfmSmallCaps = new(@"\\sc\s*([^\\]*?)\\sc\*", RegexOptions.Compiled);
+	private static readonly Regex HtmlTags = new(@"<[^>]*>", RegexOptions.Compiled);
+	private static readonly Regex TextualMarkers = new(@"\b[Tt][123]\b", RegexOptions.Compiled);
+	private static readonly Regex DuplicateSpanTags = new(@"(<span class=""sc"">LORD</span>)\s*\1+", RegexOptions.Compiled);
 
 	public static string FormatToParagraphs(IEnumerable<Verse> verses, bool applySmallCapsDivineName = true, bool capitalizeDeityPronouns = true, bool smartQuotes = true, bool emDash = true)
 	{
@@ -57,7 +74,7 @@ public static class ProseFormatter
 			if (paragraph.Count == 0) return;
 			var text = string.Join(" ", paragraph.Select(v => v.Text.Trim()));
 			text = Normalize(text, applySmallCapsDivineName, capitalizeDeityPronouns, smartQuotes, emDash);
-			sb.AppendLine($"<p class=\"para\">{System.Net.WebUtility.HtmlEncode(text)}</p>");
+			sb.AppendLine($"<p class=\"para\">{text}</p>");
 			sb.AppendLine();
 			paragraph.Clear();
 		}
@@ -78,14 +95,19 @@ public static class ProseFormatter
 					3 => "poetry-3",
 					_ => "poetry-4"
 				};
-				sb.AppendLine($"<p class=\"para poetry {indentClass}\">{System.Net.WebUtility.HtmlEncode(text)}</p>");
+				sb.AppendLine($"<p class=\"para poetry {indentClass}\">{text}</p>");
 				sb.AppendLine();
 			}
 			else
 			{
+				// Check if this verse starts a new paragraph
+				if (v.IsNewParagraph && paragraph.Count > 0)
+				{
+					FlushParagraph(); // Flush current paragraph before starting new one
+				}
+				
 				paragraph.Add(v);
-				if (paragraph.Count >= 6)
-					FlushParagraph();
+				// No more arbitrary verse count limit - paragraphs are determined by USFM markers
 			}
 		}
 		FlushParagraph();
@@ -94,7 +116,86 @@ public static class ProseFormatter
 
 	private static string Normalize(string text, bool smallCapsDivineName, bool capDeityPronouns, bool smartQuotes, bool emDash)
 	{
-		// Remove verse numbers, headings assumed removed upstream. Apply transformations.
+		// Remove verse numbers, headings, and Strong's numbers assumed removed upstream. Apply transformations.
+		var original = text;
+		
+		// Remove Strong's numbers and markup in multiple passes
+		text = StrongsNumbers.Replace(text, "").Trim();
+		text = StrongsPrefix.Replace(text, "").Trim();
+		text = StrongsInline.Replace(text, "").Trim();
+		text = StrongsDouble.Replace(text, "").Trim();
+		text = FootnoteReferences.Replace(text, "").Trim();
+		text = HebrewWithMarkers.Replace(text, "").Trim();
+		text = CrossReferences.Replace(text, "").Trim();
+		text = VerseExplanations.Replace(text, "").Trim();
+		// Remove all HTML tags completely
+		text = HtmlTags.Replace(text, "").Trim();
+		// Remove textual markers like T1, T2, T3
+		text = TextualMarkers.Replace(text, "").Trim();
+		// Remove "etc." remnants from footnotes
+		text = EtcRemnants.Replace(text, "").Trim();
+		// Remove orphaned words from incomplete footnote removal
+		text = OrphanWords.Replace(text, "").Trim();
+		// Remove USFM footnotes
+		text = UsfmFootnotes.Replace(text, "").Trim();
+		// Replace USFM additions with their content
+		text = UsfmAdditions.Replace(text, "$1").Trim();
+		// Replace USFM small caps with their content
+		text = UsfmSmallCaps.Replace(text, "$1").Trim();
+		
+		// Debug logging for KJV truncation issue - more comprehensive
+		if (original.Contains("morning") || original.Contains("darkness"))
+		{
+			File.AppendAllText("d:\\spoken\\kjv_debug.log", 
+				$"=== VERSE PROCESSING ===\nOriginal ({original.Length} chars): {original}\n");
+			
+			var step1 = StrongsNumbers.Replace(original, "").Trim();
+			if (step1 != original) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After StrongsNumbers: {step1}\n");
+			
+			var step2 = StrongsPrefix.Replace(step1, "").Trim();
+			if (step2 != step1) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After StrongsPrefix: {step2}\n");
+			
+			var step3 = StrongsInline.Replace(step2, "").Trim();
+			if (step3 != step2) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After StrongsInline: {step3}\n");
+			
+			var step4 = StrongsDouble.Replace(step3, "").Trim();
+			if (step4 != step3) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After StrongsDouble: {step4}\n");
+			
+			var step5 = FootnoteReferences.Replace(step4, "").Trim();
+			if (step5 != step4) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After FootnoteReferences: {step5}\n");
+			
+			var step6 = HebrewWithMarkers.Replace(step5, "").Trim();
+			if (step6 != step5) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After HebrewWithMarkers: {step6}\n");
+			
+			var step7 = CrossReferences.Replace(step6, "").Trim();
+			if (step7 != step6) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After CrossReferences: {step7}\n");
+			
+			var step8 = VerseExplanations.Replace(step7, "").Trim();
+			if (step8 != step7) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After VerseExplanations: {step8}\n");
+			
+			var step9 = HtmlTags.Replace(step8, "").Trim();
+			if (step9 != step8) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After HtmlTags: {step9}\n");
+			
+			var step10 = TextualMarkers.Replace(step9, "").Trim();
+			if (step10 != step9) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After TextualMarkers: {step10}\n");
+			
+			var step11 = EtcRemnants.Replace(step10, "").Trim();
+			if (step11 != step10) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After EtcRemnants: {step11}\n");
+			
+			var step12 = OrphanWords.Replace(step11, "").Trim();
+			if (step12 != step11) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After OrphanWords: {step12}\n");
+			
+			var step13 = UsfmFootnotes.Replace(step12, "").Trim();
+			if (step13 != step12) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After UsfmFootnotes: {step13}\n");
+			
+			var step14 = UsfmAdditions.Replace(step13, "$1").Trim();
+			if (step14 != step13) File.AppendAllText("d:\\spoken\\kjv_debug.log", $"After UsfmAdditions: {step14}\n");
+			
+			File.AppendAllText("d:\\spoken\\kjv_debug.log", 
+				$"Final ({text.Length} chars): {text}\n\n");
+		}
+		
+		// Now apply formatting without worrying about existing tags
 		if (smallCapsDivineName)
 		{
 			text = DivineName.Replace(text, m => $"<span class=\"sc\">{m.Value}</span>");

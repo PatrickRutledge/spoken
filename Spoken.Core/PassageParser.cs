@@ -2,8 +2,29 @@ using System.Text.RegularExpressions;
 
 namespace Spoken.Core;
 
+public class BiblicalBook
+{
+    public string Name { get; set; } = "";
+    public string UsfmCode { get; set; } = "";
+    public int ChapterCount { get; set; }
+    public int Order { get; set; }
+}
+
 public class PassageParser
 {
+    // Verse counts for each chapter of each book
+    private static readonly Dictionary<string, Dictionary<int, int>> VerseCountDatabase = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Genesis"] = new Dictionary<int, int>
+        {
+            [1] = 31, [2] = 25, [3] = 24, [4] = 26, [5] = 32, [6] = 22, [7] = 24, [8] = 22, [9] = 29, [10] = 32,
+            [11] = 32, [12] = 20, [13] = 18, [14] = 24, [15] = 21, [16] = 16, [17] = 27, [18] = 33, [19] = 38, [20] = 18,
+            [21] = 34, [22] = 24, [23] = 20, [24] = 67, [25] = 34, [26] = 35, [27] = 46, [28] = 22, [29] = 35, [30] = 43,
+            [31] = 55, [32] = 32, [33] = 20, [34] = 31, [35] = 29, [36] = 43, [37] = 36, [38] = 30, [39] = 23, [40] = 23,
+            [41] = 57, [42] = 38, [43] = 34, [44] = 34, [45] = 28, [46] = 34, [47] = 31, [48] = 22, [49] = 33, [50] = 26
+        }
+    };
+
     private static readonly Dictionary<string, (string FullName, string UsfmCode, int MaxChapters)> BookDatabase = new(StringComparer.OrdinalIgnoreCase)
     {
         // Old Testament
@@ -271,6 +292,66 @@ public class PassageParser
 
         book = default;
         return false;
+    }
+
+    public static IEnumerable<BiblicalBook> GetAllBooks()
+    {
+        var uniqueBooks = BookDatabase.Values
+            .Distinct()
+            .Select((book, index) => new BiblicalBook
+            {
+                Name = book.FullName,
+                UsfmCode = book.UsfmCode,
+                ChapterCount = book.MaxChapters,
+                Order = index + 1
+            })
+            .OrderBy(b => GetBookOrder(b.UsfmCode))
+            .ToList();
+
+        return uniqueBooks;
+    }
+
+    private static int GetBookOrder(string usfmCode)
+    {
+        var bookOrder = new[]
+        {
+            // Old Testament
+            "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA", "1KI", "2KI", 
+            "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG", "ISA", "JER", 
+            "LAM", "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", 
+            "HAG", "ZEC", "MAL",
+            // New Testament  
+            "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH", "PHP", "COL", 
+            "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE", "2PE", "1JN", "2JN", 
+            "3JN", "JUD", "REV"
+        };
+
+        var index = Array.IndexOf(bookOrder, usfmCode);
+        return index >= 0 ? index : 999;
+    }
+
+    /// <summary>
+    /// Gets the number of verses in a specific chapter of a book
+    /// </summary>
+    /// <param name="bookName">The name or abbreviation of the book</param>
+    /// <param name="chapter">The chapter number</param>
+    /// <returns>The number of verses in that chapter, or 50 as default if not found</returns>
+    public static int GetVerseCount(string bookName, int chapter)
+    {
+        if (BookDatabase.TryGetValue(bookName, out var bookInfo))
+        {
+            var fullName = bookInfo.FullName;
+            if (VerseCountDatabase.TryGetValue(fullName, out var chapterVerseCounts))
+            {
+                if (chapterVerseCounts.TryGetValue(chapter, out var verseCount))
+                {
+                    return verseCount;
+                }
+            }
+        }
+        
+        // Default fallback to 50 verses if not found
+        return 50;
     }
 }
 
