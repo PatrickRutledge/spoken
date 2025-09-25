@@ -321,10 +321,20 @@ public partial class MainPage : ContentPage
             }
 
             // Get selected formatting mode
-            var formattingMode = FormattingModePicker.SelectedIndex == 1 
-                ? FormattingMode.AiThoughtGroups 
+            var formattingMode = FormattingModePicker.SelectedIndex == 1
+                ? FormattingMode.AiThoughtGroups
                 : FormattingMode.Scholarly;
-            
+
+            // Apply AI thought grouping if selected
+            if (formattingMode == FormattingMode.AiThoughtGroups)
+            {
+                // Use the heuristic thought grouper (since we don't have OpenAI API key configured)
+                var thoughtGrouper = new HeuristicThoughtGrouper();
+                var bookName = parseResult.Book ?? "Unknown";
+                var chapterNumber = parseResult.ChapterStart ?? 1;
+                verses = await thoughtGrouper.AnalyzeThoughtUnitsAsync(verses, bookName, chapterNumber);
+            }
+
             var html = ProseFormatter.FormatToParagraphs(verses, formattingMode);
             Preview.Source = new HtmlWebViewSource { Html = html };
         }
