@@ -114,12 +114,9 @@ public class UsfmZipTextSource : ITextSource
             yield break;
         }
 
-        var targetUsfm = BookMaps.NameToUsfm.TryGetValue(book, out var usfmCode) ? usfmCode : null;
-        if (targetUsfm is null)
-        {
-            yield return new Verse { Book = book, Chapter = chapterStart ?? 1, Number = verseStart ?? 1, Text = $"[Unknown book: {book}]", IsPoetryHint = false, PoetryLevel = 0 };
-            yield break;
-        }
+        // The book parameter is already a USFM code (e.g., "JOS", "1KI")
+        // We don't need to look it up - just use it directly
+        var targetUsfm = book;
 
         using var zip = ZipFile.OpenRead(zipPath);
         foreach (var entry in zip.Entries)
