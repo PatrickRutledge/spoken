@@ -55,26 +55,26 @@ public partial class MainPage : ContentPage
     private void SetDefaultPassage()
     {
         _updatingSelectors = true;
-        
-        // Set to Genesis 1:31
+
+        // Set to Genesis 1:29-31
         StartBookPicker.SelectedIndex = 0; // Genesis
         EndBookPicker.SelectedIndex = 0;   // Genesis
-        
+
         // Update chapter pickers to populate them
         UpdateChapterPicker(StartBookPicker, StartChapterPicker);
         UpdateChapterPicker(EndBookPicker, EndChapterPicker);
-        
+
         // Set chapter 1 (index 0)
         StartChapterPicker.SelectedIndex = 0;
         EndChapterPicker.SelectedIndex = 0;
-        
+
         // Update verse pickers to populate them
         UpdateVersePicker(StartBookPicker, StartChapterPicker, StartVersePicker);
         UpdateVersePicker(EndBookPicker, EndChapterPicker, EndVersePicker);
-        
-        // Set verse 31 (index 30) for both start and end
-        if (StartVersePicker.Items.Count >= 31)
-            StartVersePicker.SelectedIndex = 30; // Verse 31
+
+        // Set verse 29 (index 28) for start and verse 31 (index 30) for end
+        if (StartVersePicker.Items.Count >= 29)
+            StartVersePicker.SelectedIndex = 28; // Verse 29
         if (EndVersePicker.Items.Count >= 31)
             EndVersePicker.SelectedIndex = 30; // Verse 31
         
